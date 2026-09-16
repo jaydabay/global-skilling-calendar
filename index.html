@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Global Skilling Calendar POC</title>
+<style>
+:root{
+  --navy:#252F6E;
+  --navy-dark:#1E275E;
+  --ink:#1B1F24;
+  --muted:#667085;
+  --line:#D9DEE8;
+  --line-soft:#E9ECF2;
+  --bg:#F7F8FB;
+  --card:#FFFFFF;
+  --focus:#0078D4;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  font-family:"Segoe UI",SegoeUI,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  overflow-x:hidden;
+}
+button,input{font:inherit}
+.shell{
+  width:100%;
+  max-width:none;
+  margin:0 auto;
+  padding:20px 24px 28px;
+}
+.page-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 0 16px;
+}
+.title-wrap h1{
+  margin:0;
+  font-size:26px;
+  line-height:1.18;
+  font-weight:700;
+  color:#222A64;
+  letter-spacing:-.2px;
+}
+.title-wrap p{
+  margin:5px 0 0;
+  font-size:13px;
+  color:var(--muted);
+}
+.poc-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:1px solid #D7DCEC;
+  background:#fff;
+  color:#44506B;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:12px;
+  white-space:nowrap;
+}
+.poc-dot{
+  width:7px;height:7px;border-radius:50%;background:#107C10;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:16px;
+  align-items:start;
+}
+.sidebar,.calendar-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  box-shadow:0 1px 2px rgba(16,24,40,.04);
+  min-width:0;
+}
+.sidebar{
+  border-radius:6px;
+  padding:15px 14px 14px;
+  height:max-content;
+}
+.sidebar h3{
+  margin:0 0 4px;
+  font-size:14px;
+  color:#344054;
+}
+.sidebar-sub{
+  margin:0 0 10px;
+  color:#7B8498;
+  font-size:11px;
+  line-height:1.35;
+}
+.filter-row{
+  display:grid;
+  grid-template-columns:18px 12px 1fr;
+  align-items:center;
+  gap:7px;
+  padding:6px 0;
+}
+.filter-row input{
+  width:15px;height:15px;
+  accent-color:#0078D4;
+  cursor:pointer;
+}
+.swatch{
+  width:11px;height:11px;border-radius:2px;
+}
+.filter-row label{
+  font-size:12px;
+  line-height:1.2;
+  cursor:pointer;
+}
+.small{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:10px;
+  line-height:1.45;
+}
+.calendar-card{
+  border-radius:6px;
+  overflow:hidden;
+  width:100%;
+}
+.calendar-top{
+  min-height:46px;
+  background:var(--navy);
+  color:#fff;
+  padding:7px 10px 7px 15px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.calendar-caption{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.calendar-caption strong{
+  font-size:15px;
+  font-weight:700;
+}
+.nav-controls{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.btn{
+  border:1px solid #C9D0DC;
+  background:#fff;
+  color:#344054;
+  border-radius:4px;
+  padding:6px 9px;
+  font-size:12px;
+  cursor:pointer;
+}
+.btn:hover{background:#F8FAFC}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn.primary{
+  background:var(--navy);
+  color:#fff;
+  border-color:var(--navy);
+}
+.btn.on-dark{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.20);
+  color:#fff;
+}
+.btn.on-dark:hover{background:rgba(255,255,255,.16)}
+.month-label{
+  font-weight:700;
+  font-size:14px;
+  min-width:132px;
+  text-align:center;
+  color:#fff;
+}
+.view-toggle{
+  display:flex;
+  align-items:center;
+  background:#303A7C;
+  border-radius:4px;
+  overflow:hidden;
+  margin-left:6px;
+}
+.view-btn{
+  min-width:68px;
+  border:0;
+  background:transparent;
+  color:#E8EAFF;
+  padding:7px 10px;
+  font-size:11px;
+  cursor:default;
+}
+.view-btn.active{
+  background:#EEF2FF;
+  color:#20285F;
+  font-weight:600;
+}
+.weekdays,.grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  width:100%;
+}
+.weekdays div{
+  padding:8px 4px;
+  text-align:center;
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  font-size:11px;
+  color:#475467;
+  background:#FBFCFE;
+  min-width:0;
+}
+.weekdays div:last-child{border-right:0}
+.day{
+  min-height:118px;
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:6px;
+  position:relative;
+  background:#fff;
+  min-width:0;
+  overflow:hidden;
+}
+.day:nth-child(7n){border-right:0}
+.day.other{
+  background:#FAFBFC;
+  color:#98A2B3;
+}
+.day-num{
+  font-size:11px;
+  font-weight:600;
+  margin-bottom:5px;
+  color:#344054;
+}
+.day.other .day-num{color:#98A2B3}
+.event{
+  display:block;
+  width:100%;
+  max-width:100%;
+  border:0;
+  border-radius:2px;
+  padding:4px 6px;
+  margin:3px 0;
+  text-align:left;
+  font-size:10px;
+  line-height:1.18;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.05);
+}
+.event:hover{
+  filter:brightness(.94);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.drawer-backdrop{
+  position:fixed;inset:0;
+  background:rgba(15,23,42,.22);
+  display:none;z-index:20;
+}
+.drawer{
+  position:fixed;top:0;right:-470px;
+  width:min(470px,94vw);
+  height:100vh;
+  background:#fff;
+  z-index:21;
+  box-shadow:-12px 0 32px rgba(15,23,42,.18);
+  transition:.22s ease;
+  padding:22px;
+  overflow:auto;
+  border-left:1px solid #D5DAE5;
+}
+.drawer.open{right:0}
+.drawer-backdrop.open{display:block}
+.drawer-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+}
+.drawer h2{
+  margin:12px 0 18px;
+  color:#20285F;
+  font-size:22px;
+  line-height:1.25;
+}
+.meta{
+  display:grid;
+  grid-template-columns:112px 1fr;
+  gap:11px 14px;
+  font-size:13px;
+  padding-top:2px;
+}
+.meta .k{color:#667085}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:600;
+}
+.link-btn{
+  display:inline-block;
+  margin-top:20px;
+  background:#0078D4;
+  color:#fff;
+  text-decoration:none;
+  padding:9px 13px;
+  border-radius:4px;
+  font-size:12px;
+}
+.notice{
+  margin-top:16px;
+  padding:10px 12px;
+  background:#FFF7ED;
+  border:1px solid #FED7AA;
+  border-radius:4px;
+  font-size:12px;
+  color:#9A3412;
+}
+.legend-preview{
+  margin-top:14px;
+  border-top:1px solid var(--line-soft);
+  padding-top:11px;
+}
+.legend-preview .legend-title{
+  color:#667085;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  margin-bottom:6px;
+}
+.legend-chip{
+  color:#fff;
+  font-size:10px;
+  font-weight:600;
+  padding:3px 5px;
+  margin-bottom:2px;
+  border-radius:1px;
+}
+@media(max-width:1100px){
+  .shell{padding:12px}
+  .layout{grid-template-columns:1fr}
+  .sidebar{order:2}
+  .day{min-height:98px}
+  .calendar-top{align-items:flex-start;flex-direction:column}
+  .nav-controls{width:100%}
+  .view-toggle{margin-left:auto}
+}
+@media(max-width:700px){
+  .page-heading{flex-direction:column}
+  .shell{padding:8px}
+  .day{min-height:86px;padding:4px}
+  .event{font-size:9px;padding:3px 4px}
+  .month-label{min-width:105px}
+  .view-toggle{display:none}
+}
+
+.day-view{
+  display:grid;
+  grid-template-columns:1fr;
+  min-height:520px;
+}
+.day-view .day{
+  min-height:520px;
+  border-right:0;
+}
+.week-view{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+}
+.week-view .day{
+  min-height:420px;
+}
+.weekdays.day-head{
+  grid-template-columns:1fr;
+}
+.weekdays.week-head{
+  grid-template-columns:repeat(7,minmax(0,1fr));
+}
+.event.day-event{
+  white-space:normal;
+  font-size:12px;
+  padding:8px 9px;
+  margin:6px 0;
+}
+
+</style>
+</head>
+<body>
+<div class="shell">
+  
+  <div class="page-heading">
+    <div class="title-wrap">
+      <h1>Global Skilling Calendar</h1>
+      <p>Global field events, launches and Microsoft moments</p>
+    </div>
+    <div class="poc-badge"><span class="poc-dot"></span> Working prototype</div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Event categories</h3>
+      <p class="sidebar-sub">Show one or multiple categories on the calendar.</p>
+      <div id="filters"></div>
+      <button class="btn" id="selectAll" style="margin-top:8px;width:100%">Select all categories</button>
+      <div class="legend-preview">
+        <div class="legend-title">Category colors</div>
+        <div class="legend-chip" style="background:#0070C0">Microsoft Flagship Events</div>
+        <div class="legend-chip" style="background:#3C7D22">Competitor Events</div>
+        <div class="legend-chip" style="background:#782170">Skilling Launch</div>
+        <div class="legend-chip" style="background:#D86DCD">Product Launch</div>
+        <div class="legend-chip" style="background:#0C769E">Microsoft Moments</div>
+        <div class="legend-chip" style="background:#104861">Global Skilling Moments</div>
+      </div>
+      <div class="small">Click an event to open the detail pane with its date, solution area and source link.</div>
+    </aside>
+
+    <section class="calendar-card">
+      <div class="calendar-top">
+        <div class="calendar-caption"><strong>Calendar — <span id="calendarTopMonth"></span></strong></div>
+        <div class="nav-controls">
+          <button class="btn on-dark" id="prev">‹</button>
+          <button class="btn on-dark" id="today">Today</button>
+          <div class="month-label" id="monthLabel"></div>
+          <button class="btn on-dark" id="next">›</button>
+          <div class="view-toggle" aria-label="Calendar view">
+            <button class="view-btn" id="viewDay">Day</button>
+            <button class="view-btn" id="viewWeek">Work week</button>
+            <button class="view-btn active" id="viewMonth">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="weekdays">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </div>
+</div>
+
+<div class="drawer-backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div id="drawerCategory"></div>
+    <button class="btn" id="closeDrawer">✕</button>
+  </div>
+  <h2 id="drawerTitle"></h2>
+  <div class="meta">
+    <div class="k">Date</div><div id="drawerDate"></div>
+    <div class="k">Solution area</div><div id="drawerSolution"></div>
+    <div class="k">Event type</div><div id="drawerType"></div>
+  </div>
+  <a id="drawerLink" class="link-btn" href="#" target="_blank" rel="noopener">Open event link</a>
+  <div id="tbdNotice" class="notice" style="display:none">No final event link is available yet (TBD).</div>
+</aside>
+
+<script>
+const events = [{"eventType": "Competitor Events", "title": "Salesforce Dreamforce", "start": "9/14/2026", "end": "9/18/2026", "solutionArea": "Cross Solution Area", "link": "https://www.salesforce.com/dreamforce/", "startISO": "2026-09-14", "endISO": "2026-09-18"}, {"eventType": "Competitor Events", "title": "Oracle AI World", "start": "10/26/2026", "end": "10/29/2026", "solutionArea": "Cross Solution Area", "link": "https://www.oracle.com/ai-world/", "startISO": "2026-10-26", "endISO": "2026-10-29"}, {"eventType": "Competitor Events", "title": "AWS re\\:Invent", "start": "11/30/2026", "end": "12/4/2026", "solutionArea": "Cross Solution Area", "link": "https://aws.amazon.com/events/reinvent/", "startISO": "2026-11-30", "endISO": "2026-12-04"}, {"eventType": "Competitor Events", "title": "NVIDIA GTC", "start": "3/14/2027", "end": "3/18/2027", "solutionArea": "Cross Solution Area", "link": "https://www.nvidia.com/gtc/", "startISO": "2027-03-14", "endISO": "2027-03-18"}, {"eventType": "Competitor Events", "title": "Google Cloud Next", "start": "4/13/2027", "end": "4/15/2027", "solutionArea": "Cross Solution Area", "link": "https://www.googlecloudevents.com/next-vegas", "startISO": "2027-04-13", "endISO": "2027-04-15"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft Ignite", "start": "11/17/2026", "end": "11/20/2026", "solutionArea": "Cross Solution Area", "link": "https://ignite.microsoft.com/", "startISO": "2026-11-17", "endISO": "2026-11-20"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Singapore", "start": "10/12/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-12", "endISO": "2026-10-12"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Paris", "start": "10/20/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-20", "endISO": "2026-10-20"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: London", "start": "10/21/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-21", "endISO": "2026-10-21"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Cologne", "start": "10/22/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-22", "endISO": "2026-10-22"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Philadelphia", "start": "10/22/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-22", "endISO": "2026-10-22"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Mexico City", "start": "10/29/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-10-29", "endISO": "2026-10-29"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Dubai", "start": "11/3/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-11-03", "endISO": "2026-11-03"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Seattle", "start": "12/9/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-12-09", "endISO": "2026-12-09"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Utrecht", "start": "12/10/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2026-12-10", "endISO": "2026-12-10"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Toronto", "start": "1/13/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-01-13", "endISO": "2027-01-13"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Madrid", "start": "1/14/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-01-14", "endISO": "2027-01-14"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Taipei", "start": "1/20/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-01-20", "endISO": "2027-01-20"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Chicago", "start": "2/2/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-02", "endISO": "2027-02-02"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Sydney", "start": "2/4/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-04", "endISO": "2027-02-04"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Johannesburg", "start": "2/10/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-10", "endISO": "2027-02-10"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Mumbai", "start": "2/10/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-10", "endISO": "2027-02-10"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Bengaluru", "start": "2/15/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-15", "endISO": "2027-02-15"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Milan", "start": "2/18/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-02-18", "endISO": "2027-02-18"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Shanghai", "start": "3/16/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-03-16", "endISO": "2027-03-16"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Stockholm", "start": "3/17/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-03-17", "endISO": "2027-03-17"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: New York City", "start": "3/18/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-03-18", "endISO": "2027-03-18"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Sao Paulo", "start": "3/24/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-03-24", "endISO": "2027-03-24"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Riyadh", "start": "4/7/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-07", "endISO": "2027-04-07"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Seoul", "start": "4/14/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-14", "endISO": "2027-04-14"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Tokyo", "start": "4/15/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-15", "endISO": "2027-04-15"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Zurich", "start": "4/15/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-15", "endISO": "2027-04-15"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Jakarta", "start": "4/22/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-22", "endISO": "2027-04-22"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Miami", "start": "4/28/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-28", "endISO": "2027-04-28"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Copenhagen", "start": "4/29/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-04-29", "endISO": "2027-04-29"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Montreal", "start": "5/25/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-05-25", "endISO": "2027-05-25"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Brussels", "start": "5/27/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-05-27", "endISO": "2027-05-27"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Houston", "start": "6/2/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-06-02", "endISO": "2027-06-02"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Tel Aviv", "start": "6/2/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-06-02", "endISO": "2027-06-02"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Atlanta", "start": "6/15/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-06-15", "endISO": "2027-06-15"}, {"eventType": "Microsoft Flagship Events", "title": "Microsoft AI Tour: Osaka", "start": "6/24/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aitour.microsoft.com/", "startISO": "2027-06-24", "endISO": "2027-06-24"}, {"eventType": "Global Skilling Moments", "title": "Cybersecurity Awareness Month", "start": "10/1/2026", "end": "10/31/2026", "solutionArea": "Security", "link": "https://aka.ms/cam2026", "startISO": "2026-10-01", "endISO": "2026-10-31"}, {"eventType": "Global Skilling Moments", "title": "AI Skills Fest (Target March 2027)", "start": "3/1/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aiskillsnavigator.microsoft.com/", "startISO": "2027-03-01", "endISO": "2027-03-01"}, {"eventType": "Global Skilling Moments", "title": "Maker Month", "start": "6/1/2027", "end": "6/30/2027", "solutionArea": "Cross Solution Area", "link": "https://aiskillsnavigator.microsoft.com/", "startISO": "2027-06-01", "endISO": "2027-06-30"}, {"eventType": "Microsoft Flagship Events", "title": "CIO Summit FY27", "start": "11/17/2026", "end": "11/19/2026", "solutionArea": "Cross Solution Area", "link": "TBD", "startISO": "2026-11-17", "endISO": "2026-11-19"}, {"eventType": "Microsoft Moments", "title": "Earnings Release", "start": "10/28/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast", "startISO": "2026-10-28", "endISO": "2026-10-28"}, {"eventType": "Microsoft Moments", "title": "Earnings Release", "start": "1/27/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast", "startISO": "2027-01-27", "endISO": "2027-01-27"}, {"eventType": "Microsoft Moments", "title": "Earnings Release", "start": "4/28/2027", "end": "", "solutionArea": "Cross Solution Area", "link": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast", "startISO": "2027-04-28", "endISO": "2027-04-28"}, {"eventType": "Product Launch", "title": "AI at Work Moment", "start": "9/30/2026", "end": "", "solutionArea": "AI Business Solutions", "link": "aka.ms/AIatWorkRoadmap", "startISO": "2026-09-30", "endISO": "2026-09-30"}, {"eventType": "Product Launch", "title": "Project Perception GA (Ignite Timeframe)", "start": "11/1/2026", "end": "", "solutionArea": "Security", "link": "TBD", "startISO": "2026-11-01", "endISO": "2026-11-01"}, {"eventType": "Product Launch", "title": "Ignite Product GA Announcements", "start": "11/17/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "TBD", "startISO": "2026-11-17", "endISO": "2026-11-17"}, {"eventType": "Product Launch", "title": "Microsoft Scout GA (Ignite Timeframe)", "start": "11/1/2026", "end": "", "solutionArea": "AI Business Solutions", "link": "TBD", "startISO": "2026-11-01", "endISO": "2026-11-01"}, {"eventType": "Skilling Launch", "title": "AI at Work Moment Skilling", "start": "9/30/2026", "end": "", "solutionArea": "AI Business Solutions", "link": "https://microsoftdigitallearning.visualstudio.com/Courseware/_workitems/edit/180629", "startISO": "2026-09-30", "endISO": "2026-09-30"}, {"eventType": "Skilling Launch", "title": "Caldova End-toEnd Demo Enablement", "start": "9/30/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://microsoftdigitallearning.visualstudio.com/Courseware/_workitems/edit/177099", "startISO": "2026-09-30", "endISO": "2026-09-30"}, {"eventType": "Skilling Launch", "title": "Skilling for Azure Quantum", "start": "9/30/2026", "end": "", "solutionArea": "Cloud & AI Platforms", "link": "https://microsoftdigitallearning.visualstudio.com/Courseware/_workitems/edit/178664", "startISO": "2026-09-30", "endISO": "2026-09-30"}, {"eventType": "Skilling Launch", "title": "Copilot consumption and Token Economics", "start": "9/18/2026", "end": "", "solutionArea": "AI Business Solutions", "link": "https://microsoftdigitallearning.visualstudio.com/Courseware/_workitems/edit/176973", "startISO": "2026-09-18", "endISO": "2026-09-18"}, {"eventType": "Microsoft Moments", "title": "MVP Summit", "start": "3/16/2027", "end": "3/18/2027", "solutionArea": "Cross Solution Area", "link": "TBD", "startISO": "2027-03-16", "endISO": "2027-03-18"}, {"eventType": "Microsoft Moments", "title": "Ability Summit (Target May 2027)", "start": "5/1/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "TBD", "startISO": "2026-05-01", "endISO": "2026-05-01"}, {"eventType": "Microsoft Moments", "title": "GitHub Universe", "start": "10/29/2026", "end": "10/30/2026", "solutionArea": "Cloud & AI Platforms", "link": "https://githubuniverse.com/", "startISO": "2026-10-29", "endISO": "2026-10-30"}, {"eventType": "Skilling Launch", "title": "Skilling for Ignite GA Announcements", "start": "11/17/2026", "end": "", "solutionArea": "Cross Solution Area", "link": "https://aiskillsnavigator.microsoft.com/", "startISO": "2026-11-17", "endISO": "2026-11-17"}];
+const colors = {"Microsoft Flagship Events": "#0070C0", "Competitor Events": "#3C7D22", "Skilling Launch": "#782170", "Product Launch": "#D86DCD", "Microsoft Moments": "#0C769E", "Global Skilling Moments": "#104861"};
+const categories = Object.keys(colors);
+let active = new Set(categories);
+let current = new Date(2026, 9, 1); // October 2026
+let currentView = 'month';
+
+const fmtMonth = d => d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+const fmtDate = s => new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const sameDay = (a,b) => a.toISOString().slice(0,10)===b.toISOString().slice(0,10);
+
+function renderFilters(){
+  const root=document.getElementById('filters'); root.innerHTML='';
+  categories.forEach(c=>{
+    const row=document.createElement('div'); row.className='filter-row';
+    row.innerHTML=`<input type="checkbox" checked id="${c.replace(/\W/g,'_')}"><span class="swatch" style="background:${colors[c]}"></span><label>${c}</label>`;
+    const cb=row.querySelector('input');
+    cb.addEventListener('change',()=>{cb.checked?active.add(c):active.delete(c);render();});
+    root.appendChild(row);
+  });
+}
+
+function eventVisibleOnDay(ev, date){
+  const s=new Date(ev.startISO+'T12:00:00'), e=new Date(ev.endISO+'T12:00:00');
+  return date>=s && date<=e;
+}
+
+function setActiveViewButton(){
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  const map={day:'viewDay',week:'viewWeek',month:'viewMonth'};
+  document.getElementById(map[currentView]).classList.add('active');
+}
+
+function makeEventButton(ev){
+  const b=document.createElement('button');
+  b.className='event'+(currentView==='day'?' day-event':'');
+  b.textContent=ev.title;
+  const col=colors[ev.eventType]||'#667085';
+  b.style.background=col;
+  b.style.borderLeftColor=col;
+  b.title=ev.title;
+  b.addEventListener('click',()=>openDrawer(ev,col));
+  return b;
+}
+
+function renderMonth(){
+  const grid=document.getElementById('grid');
+  const weekdays=document.querySelector('.weekdays');
+  grid.className='grid';
+  weekdays.className='weekdays';
+  weekdays.innerHTML='<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>';
+  grid.innerHTML='';
+
+  const y=current.getFullYear(), m=current.getMonth();
+  const first=new Date(y,m,1), start=new Date(y,m,1-first.getDay());
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const cell=document.createElement('div'); cell.className='day'+(d.getMonth()!==m?' other':'');
+    cell.innerHTML=`<div class="day-num">${d.getDate()}</div>`;
+    const dayEvents=events.filter(ev=>active.has(ev.eventType)&&eventVisibleOnDay(ev,d));
+    dayEvents.slice(0,5).forEach(ev=>cell.appendChild(makeEventButton(ev)));
+    if(dayEvents.length>5){
+      const more=document.createElement('div');
+      more.style.cssText='font-size:11px;color:#667085;margin-top:3px';
+      more.textContent=`+${dayEvents.length-5} more`;
+      cell.appendChild(more);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function renderWorkWeek(){
+  const grid=document.getElementById('grid');
+  const weekdays=document.querySelector('.weekdays');
+  grid.className='week-view';
+  weekdays.className='weekdays week-head';
+  weekdays.innerHTML='<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>';
+  grid.innerHTML='';
+
+  // Week starts on Sunday and runs through Saturday
+  const d=new Date(current);
+  const sunday=new Date(d);
+  sunday.setDate(d.getDate()-d.getDay());
+
+  for(let i=0;i<7;i++){
+    const day=new Date(sunday);
+    day.setDate(sunday.getDate()+i);
+    const cell=document.createElement('div');
+    cell.className='day';
+
+    const isToday = new Date().toDateString() === day.toDateString();
+    const label = day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    cell.innerHTML=`<div class="day-num"${isToday ? ' style="color:#0078D4;font-weight:700"' : ''}>${label}</div>`;
+
+    const dayEvents=events.filter(ev=>active.has(ev.eventType)&&eventVisibleOnDay(ev,day));
+    if(dayEvents.length===0){
+      const empty=document.createElement('div');
+      empty.style.cssText='font-size:11px;color:#98A2B3;margin-top:8px';
+      empty.textContent='No events';
+      cell.appendChild(empty);
+    } else {
+      dayEvents.forEach(ev=>cell.appendChild(makeEventButton(ev)));
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function renderDay(){
+  const grid=document.getElementById('grid');
+  const weekdays=document.querySelector('.weekdays');
+  grid.className='day-view';
+  weekdays.className='weekdays day-head';
+  weekdays.innerHTML=`<div>${current.toLocaleDateString('en-US',{weekday:'long'})}</div>`;
+  grid.innerHTML='';
+
+  const cell=document.createElement('div'); cell.className='day';
+  cell.innerHTML=`<div class="day-num">${current.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>`;
+  const dayEvents=events.filter(ev=>active.has(ev.eventType)&&eventVisibleOnDay(ev,current));
+  if(dayEvents.length===0){
+    const empty=document.createElement('div');
+    empty.style.cssText='padding:18px 4px;color:#98A2B3;font-size:13px';
+    empty.textContent='No events scheduled for this day.';
+    cell.appendChild(empty);
+  } else {
+    dayEvents.forEach(ev=>cell.appendChild(makeEventButton(ev)));
+  }
+  grid.appendChild(cell);
+}
+
+function render(){
+  const monthText=fmtMonth(current);
+  document.getElementById('monthLabel').textContent=
+    currentView==='day'
+      ? current.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : monthText;
+  document.getElementById('calendarTopMonth').textContent=
+    currentView==='day'
+      ? current.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+      : currentView==='week'
+        ? 'Work week'
+        : monthText;
+
+  setActiveViewButton();
+
+  if(currentView==='day') renderDay();
+  else if(currentView==='week') renderWorkWeek();
+  else renderMonth();
+}
+
+function openDrawer(ev,col){
+  document.getElementById('drawerTitle').textContent=ev.title;
+  document.getElementById('drawerDate').textContent=ev.endISO!==ev.startISO ? `${fmtDate(ev.startISO)} – ${fmtDate(ev.endISO)}` : fmtDate(ev.startISO);
+  document.getElementById('drawerSolution').textContent=ev.solutionArea||'—';
+  document.getElementById('drawerType').textContent=ev.eventType;
+  document.getElementById('drawerCategory').innerHTML=`<span class="pill" style="background:${col}18;color:${col}"><span class="swatch" style="background:${col}"></span>${ev.eventType}</span>`;
+  const a=document.getElementById('drawerLink'), notice=document.getElementById('tbdNotice');
+  const usable=ev.link && ev.link!=='TBD';
+  if(usable){
+    let href=ev.link;
+    if(href.startsWith('aka.ms/')) href='https://'+href;
+    a.href=href; a.style.display='inline-block'; notice.style.display='none';
+  } else {
+    a.style.display='none'; notice.style.display='block';
+  }
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('backdrop').classList.remove('open');}
+
+document.getElementById('prev').onclick=()=>{
+  if(currentView==='day') current.setDate(current.getDate()-1);
+  else if(currentView==='week') current.setDate(current.getDate()-7);
+  else current=new Date(current.getFullYear(),current.getMonth()-1,1);
+  current=new Date(current);
+  render();
+}
+document.getElementById('next').onclick=()=>{
+  if(currentView==='day') current.setDate(current.getDate()+1);
+  else if(currentView==='week') current.setDate(current.getDate()+7);
+  else current=new Date(current.getFullYear(),current.getMonth()+1,1);
+  current=new Date(current);
+  render();
+}
+document.getElementById('today').onclick=()=>{current=new Date();render();}
+document.getElementById('closeDrawer').onclick=closeDrawer;
+document.getElementById('backdrop').onclick=closeDrawer;
+document.getElementById('selectAll').onclick=()=>{active=new Set(categories);document.querySelectorAll('#filters input').forEach(x=>x.checked=true);render();}
+
+document.getElementById('viewDay').onclick=()=>{currentView='day';render();}
+document.getElementById('viewWeek').onclick=()=>{currentView='week';render();}
+document.getElementById('viewMonth').onclick=()=>{currentView='month';current=new Date(current.getFullYear(),current.getMonth(),1);render();}
+
+renderFilters(); render();
+</script>
+</body>
+</html>
